@@ -1,27 +1,33 @@
-const { normalizeText } = require('./formatters');
-
 const GLOBAL_COMMANDS = {
   MENU: 'menu',
   CANCELAR: 'cancelar',
   HUMANO: 'humano',
 };
 
+function normalizeText(text = '') {
+  return String(text)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function parseGlobalCommand(text = '') {
   const normalized = normalizeText(text);
-  if (['menu', 'menú', 'inicio'].map(normalizeText).includes(normalized)) return GLOBAL_COMMANDS.MENU;
+  if (['menu', 'menú', 'inicio', 'ayuda', 'hola'].map(normalizeText).includes(normalized)) return GLOBAL_COMMANDS.MENU;
   if (normalized === 'cancelar') return GLOBAL_COMMANDS.CANCELAR;
-  if (['humano', 'persona', 'ejecutivo', 'asesor'].includes(normalized)) return GLOBAL_COMMANDS.HUMANO;
+  if (['humano', 'persona', 'asesor'].includes(normalized)) return GLOBAL_COMMANDS.HUMANO;
   return null;
 }
 
 function parseMenuOption(text = '') {
   const normalized = normalizeText(text);
-  if (/^1\b/.test(normalized) || normalized.includes('asesoria') || normalized.includes('contab')) return 'asesoria_contable';
-  if (/^2\b/.test(normalized) || normalized.includes('tribut') || normalized.includes('iva') || normalized.includes('f29') || normalized.includes('renta')) return 'consulta_tributaria';
-  if (/^3\b/.test(normalized) || normalized.includes('crear') || normalized.includes('empresa') || normalized.includes('sociedad')) return 'crear_empresa';
-  if (/^4\b/.test(normalized) || normalized.includes('document') || normalized.includes('factura') || normalized.includes('boleta')) return 'documentos';
-  if (/^5\b/.test(normalized) || normalized.includes('agendar') || normalized.includes('reunion') || normalized.includes('hora')) return 'agendar_reunion';
-  if (/^6\b/.test(normalized) || normalized.includes('humano') || normalized.includes('persona') || normalized.includes('ejecutivo')) return 'humano';
+  if (/^1\b/.test(normalized) || normalized.includes('asesoria') || normalized.includes('contabilidad')) return 'asesoria_contable';
+  if (/^2\b/.test(normalized) || normalized.includes('tributaria') || normalized.includes('iva') || normalized.includes('f29') || normalized.includes('impuestos')) return 'consulta_tributaria';
+  if (/^3\b/.test(normalized) || normalized.includes('crear empresa') || normalized === 'empresa') return 'crear_empresa';
+  if (/^4\b/.test(normalized) || normalized.includes('documentos') || normalized.includes('enviar documentos')) return 'documentos';
+  if (/^5\b/.test(normalized) || normalized.includes('reunion') || normalized.includes('agendar')) return 'agendar_reunion';
+  if (/^6\b/.test(normalized) || normalized.includes('humano') || normalized.includes('persona') || normalized.includes('asesor')) return 'humano';
   return null;
 }
 
@@ -30,7 +36,12 @@ function parseNumberedOption(text = '', options = {}) {
   const numberMatch = normalized.match(/^\d+/);
   if (numberMatch && options[numberMatch[0]]) return options[numberMatch[0]];
 
-  return Object.entries(options).find(([, label]) => normalizeText(label).includes(normalized) || normalized.includes(normalizeText(label)))?.[1] || text;
+  const match = Object.values(options).find((label) => {
+    const normalizedLabel = normalizeText(label);
+    return normalizedLabel.includes(normalized) || normalized.includes(normalizedLabel);
+  });
+
+  return match || String(text).trim();
 }
 
 function extractIncomingMessage(body = {}) {
@@ -43,17 +54,18 @@ function extractIncomingMessage(body = {}) {
   return {
     from: message.from,
     contactName: contact?.profile?.name || null,
-    text: message.text?.body || message.button?.text || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '',
     type: message.type,
-    timestamp: message.timestamp,
+    text: message.text?.body || message.button?.text || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '',
     messageId: message.id,
-    mediaId: message.document?.id || message.image?.id || message.video?.id || message.audio?.id || null,
+    timestamp: message.timestamp,
+    mediaId: message.document?.id || message.image?.id || null,
     raw: message,
   };
 }
 
 module.exports = {
   GLOBAL_COMMANDS,
+  normalizeText,
   parseGlobalCommand,
   parseMenuOption,
   parseNumberedOption,

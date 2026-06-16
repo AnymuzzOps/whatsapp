@@ -1,7 +1,6 @@
 const { appendLead } = require('../services/googleSheets.service');
 const { setState, updateState, clearState } = require('../store/conversationState.store');
 const { parseNumberedOption } = require('../utils/messageParser');
-const { stringifyDetails } = require('../utils/formatters');
 
 const FLOW = 'consulta_tributaria';
 const QUESTIONS = [
@@ -24,7 +23,7 @@ async function finish(phone, data) {
       nombre: data.nombre,
       correo: data.contacto,
       tipo_solicitud: 'Consulta tributaria',
-      detalle: stringifyDetails(data),
+      detalle: JSON.stringify(data),
       estado: 'pendiente_revision_humana',
     });
   } catch (error) {

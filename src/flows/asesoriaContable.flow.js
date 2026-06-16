@@ -2,7 +2,6 @@ const { appendLead } = require('../services/googleSheets.service');
 const { setState, updateState, clearState } = require('../store/conversationState.store');
 const { parseNumberedOption } = require('../utils/messageParser');
 const { isValidEmail, isOmittedRut } = require('../utils/validators');
-const { stringifyDetails } = require('../utils/formatters');
 
 const FLOW = 'asesoria_contable';
 const QUESTIONS = [
@@ -34,7 +33,7 @@ async function finish(phone, data) {
       rut: data.rut,
       correo: data.correo,
       tipo_solicitud: 'Asesoría contable',
-      detalle: stringifyDetails(data),
+      detalle: JSON.stringify(data),
       estado: 'nuevo',
     });
   } catch (error) {

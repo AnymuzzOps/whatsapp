@@ -1,6 +1,6 @@
 const { appendLead } = require('../services/googleSheets.service');
 const { setState, updateState, clearState } = require('../store/conversationState.store');
-const { normalizeText, stringifyDetails } = require('../utils/formatters');
+const { normalizeText } = require('../utils/messageParser');
 
 const FLOW = 'documentos';
 
@@ -23,7 +23,7 @@ async function finish(phone, data) {
       nombre: data.nombreEmpresa,
       empresa: data.nombreEmpresa,
       tipo_solicitud: 'Recepción de documentos',
-      detalle: stringifyDetails({ cantidadArchivos: data.fileCount || 0 }),
+      detalle: JSON.stringify({ cantidadArchivos: data.fileCount || 0 }),
       estado: 'documentos recibidos',
     });
   } catch (error) {

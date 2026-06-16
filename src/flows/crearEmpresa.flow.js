@@ -2,7 +2,6 @@ const { appendLead } = require('../services/googleSheets.service');
 const { setState, updateState, clearState } = require('../store/conversationState.store');
 const { parseNumberedOption } = require('../utils/messageParser');
 const { isValidEmail } = require('../utils/validators');
-const { stringifyDetails } = require('../utils/formatters');
 
 const FLOW = 'crear_empresa';
 const QUESTIONS = [
@@ -29,7 +28,7 @@ async function finish(phone, data) {
       nombre: data.nombre,
       correo: data.correo,
       tipo_solicitud: 'Crear empresa',
-      detalle: stringifyDetails(data),
+      detalle: JSON.stringify(data),
       estado: 'nuevo',
     });
   } catch (error) {

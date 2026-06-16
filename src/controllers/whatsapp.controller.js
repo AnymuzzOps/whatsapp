@@ -83,7 +83,6 @@ async function receiveWebhook(req, res) {
   res.sendStatus(200);
 
   try {
-    await whatsappService.markMessageAsRead(incomingMessage.messageId);
     const responseText = await processIncomingMessage(incomingMessage);
     await whatsappService.sendTextMessage(incomingMessage.from, responseText);
   } catch (error) {

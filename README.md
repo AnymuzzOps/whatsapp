@@ -1,38 +1,30 @@
-# Bot WhatsApp MVP - MyR Consultores
+# Bot WhatsApp MyR - MVP
 
-MVP de backend en **Node.js + Express** para un bot de WhatsApp por flujos para **MyR Consultores**, empresa chilena de asesoría contable y tributaria.
+Primera versión MVP de un bot de WhatsApp automatizado por flujos para **MyR Consultores**, empresa de asesoría contable y tributaria en Chile.
 
-El bot usa **WhatsApp Business Platform / WhatsApp Cloud API**. No usa WhatsApp Web, `whatsapp-web.js`, IA generativa, campañas ni recordatorios automáticos.
+Este proyecto usa **WhatsApp Business Platform / WhatsApp Cloud API oficial**, **Node.js**, **Express**, **Axios** y **Dotenv**. No usa IA generativa, WhatsApp Web, `whatsapp-web.js` ni librerías no oficiales.
 
-## Alcance del MVP
+## Alcance
 
 Incluye:
 
 - Webhook de WhatsApp Cloud API.
 - Menú principal.
-- Flujos simples por opciones.
+- Flujos por opciones.
 - Estados de conversación en memoria.
-- Guardado de leads en Google Sheets.
+- Función `appendLead(data)` preparada para Google Sheets y desactivada por defecto.
 - Comandos globales `MENU`, `CANCELAR` y `HUMANO`.
+- Endpoint `GET /health` para probar localmente.
 
 No incluye todavía:
 
 - Google Drive.
 - Google Calendar.
+- Campañas.
+- Plantillas proactivas.
 - Panel administrativo.
 - Base de datos.
 - IA.
-- Recordatorios automáticos.
-- Campañas.
-- Plantillas proactivas.
-
-## Requisitos
-
-- Node.js 18 o superior.
-- Cuenta de Meta for Developers con WhatsApp Cloud API.
-- Una hoja de Google Sheets.
-- Una cuenta de servicio de Google con acceso de edición a la hoja.
-- Una URL HTTPS pública para configurar el webhook en Meta.
 
 ## Instalación
 
@@ -41,36 +33,41 @@ npm install
 cp .env.example .env
 ```
 
-Completa `.env` con tus credenciales reales.
-
-## Variables de entorno
+## Configuración de `.env`
 
 ```env
 PORT=3000
-WHATSAPP_TOKEN=EAAG...
-WHATSAPP_PHONE_NUMBER_ID=1234567890
+WHATSAPP_TOKEN=TU_TOKEN_DE_ACCESO
+WHATSAPP_PHONE_NUMBER_ID=TU_IDENTIFICADOR_DE_NUMERO
 WHATSAPP_VERIFY_TOKEN=myr_webhook_verify_token
 WHATSAPP_GRAPH_API_VERSION=v21.0
-GOOGLE_SHEETS_ID=1abcDEF...
-GOOGLE_SERVICE_ACCOUNT_EMAIL=bot-sheets@project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+GOOGLE_SHEETS_ENABLED=false
+GOOGLE_SHEETS_ID=
+GOOGLE_SERVICE_ACCOUNT_EMAIL=
+GOOGLE_PRIVATE_KEY=
 ```
 
-> No subas `.env` al repositorio y no imprimas tokens en consola.
+Importante:
 
-## Ejecución
+- No compartas públicamente `WHATSAPP_TOKEN`.
+- No subas `.env` a Git.
+- No coloques credenciales reales dentro del código.
+- `WHATSAPP_VERIFY_TOKEN` puede ser cualquier texto definido por ti, pero debe coincidir con el token configurado en Meta.
 
-Desarrollo:
+## Ejecutar en desarrollo
 
 ```bash
 npm run dev
 ```
 
-Producción/local simple:
+Ejecutar sin nodemon:
 
 ```bash
 npm start
 ```
+
+## Probar localmente
 
 Health check:
 
@@ -78,118 +75,192 @@ Health check:
 curl http://localhost:3000/health
 ```
 
-## Webhook de WhatsApp
+Respuesta esperada:
 
-El proyecto expone:
+```json
+{
+  "status": "ok",
+  "service": "bot-whatsapp-myr"
+}
+```
 
-- `GET /webhook`: verificación del webhook de Meta.
-- `POST /webhook`: recepción de mensajes entrantes.
+## Probar con ngrok
 
-Prueba de verificación:
+Levanta el servidor:
+
+```bash
+npm run dev
+```
+
+En otra terminal:
+
+```bash
+ngrok http 3000
+```
+
+Ngrok entregará una URL HTTPS similar a:
+
+```txt
+https://TU_URL_NGROK.ngrok-free.app
+```
+
+En Meta debes configurar:
+
+```txt
+Callback URL: https://TU_URL_NGROK.ngrok-free.app/webhook
+Verify Token: el mismo valor de WHATSAPP_VERIFY_TOKEN
+```
+
+## Webhook
+
+### Verificación de Meta
+
+Endpoint:
+
+```txt
+GET /webhook
+```
+
+Lee los parámetros:
+
+- `hub.mode`
+- `hub.verify_token`
+- `hub.challenge`
+
+Si `hub.verify_token` coincide con `WHATSAPP_VERIFY_TOKEN`, responde `hub.challenge`. Si no coincide, responde `403`.
+
+Prueba manual:
 
 ```bash
 curl "http://localhost:3000/webhook?hub.mode=subscribe&hub.verify_token=myr_webhook_verify_token&hub.challenge=12345"
 ```
 
-Si el token coincide, responde `12345`.
+### Recepción de mensajes
 
-## Configuración en Meta
-
-1. Crea una app en Meta for Developers.
-2. Agrega el producto WhatsApp.
-3. Obtén `WHATSAPP_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID`.
-4. Publica este backend en una URL HTTPS.
-5. Configura el webhook con:
-   - Callback URL: `https://tu-dominio.com/webhook`
-   - Verify token: el valor de `WHATSAPP_VERIFY_TOKEN`.
-6. Suscribe los eventos de mensajes.
-
-El envío de mensajes usa Graph API:
+Endpoint:
 
 ```txt
-POST https://graph.facebook.com/{WHATSAPP_GRAPH_API_VERSION}/{WHATSAPP_PHONE_NUMBER_ID}/messages
+POST /webhook
 ```
 
-## Google Sheets
+Extrae desde el payload de WhatsApp:
 
-La función `appendLead(data)` guarda prospectos en una pestaña llamada `Leads`.
+- Número del usuario.
+- Nombre del contacto, si viene disponible.
+- Tipo de mensaje.
+- Texto recibido.
+- ID del mensaje.
+- Timestamp.
 
-Columnas sugeridas:
+## Datos necesarios desde Meta
 
-| Columna | Campo |
-| --- | --- |
-| A | fecha |
-| B | hora |
-| C | teléfono |
-| D | nombre |
-| E | empresa |
-| F | rut |
-| G | correo |
-| H | tipo_solicitud |
-| I | detalle |
-| J | estado |
-| K | origen |
+Para probar con el número de prueba de Meta necesitas:
 
-Pasos:
+- Token de acceso.
+- Identificador de número de teléfono (`WHATSAPP_PHONE_NUMBER_ID`).
+- Identificador de cuenta de WhatsApp Business.
+- Número de prueba de WhatsApp.
+- Tu número personal agregado como destinatario de prueba, si la app sigue en modo desarrollo.
 
-1. Crea una hoja de cálculo.
-2. Crea una pestaña `Leads`.
-3. Comparte la hoja con el correo de la cuenta de servicio (`GOOGLE_SERVICE_ACCOUNT_EMAIL`).
-4. Copia el ID de la hoja en `GOOGLE_SHEETS_ID`.
-5. Copia la llave privada en `GOOGLE_PRIVATE_KEY`, manteniendo los saltos como `\n`.
-
-Si Google Sheets falla, el bot registra el error y continúa respondiendo al usuario.
+Luego envía un mensaje al número de prueba desde WhatsApp y revisa que Meta entregue el evento al webhook configurado.
 
 ## Menú principal
 
-El usuario puede escribir `hola`, `menu`, `menú`, `inicio` o enviar su primer mensaje para ver:
+Si el usuario escribe `hola`, `menu`, `menú`, `inicio`, `ayuda` o envía su primer mensaje, el bot responde:
 
 ```txt
-1. Quiero asesoría contable
-2. Necesito ayuda tributaria
-3. Quiero crear una empresa
-4. Soy cliente y quiero enviar documentos
-5. Quiero agendar una reunión
-6. Hablar con una persona
+Hola 👋 Soy el asistente virtual de MyR Consultores.
+
+Te ayudaré a orientar tu solicitud para que nuestro equipo pueda responderte de forma más rápida y ordenada.
+
+Selecciona una opción:
+
+Quiero asesoría contable
+Necesito ayuda tributaria
+Quiero crear una empresa
+Soy cliente y quiero enviar documentos
+Quiero agendar una reunión
+Hablar con una persona
 ```
 
-El parser reconoce números y textos simples como `asesoría`, `contabilidad`, `tributaria`, `IVA`, `crear empresa`, `documentos`, `reunión` o `humano`.
+El usuario puede responder con número o texto parecido:
 
-## Flujos disponibles
-
-- **Asesoría contable:** captura datos básicos del prospecto, servicio requerido y contabilidad atrasada.
-- **Consulta tributaria:** clasifica el tema, captura consulta y contacto, y deriva a revisión humana.
-- **Crear empresa:** captura necesidad, rubro, socios, nombre y correo.
-- **Enviar documentos:** solicita nombre/empresa, cuenta archivos recibidos y finaliza con `LISTO`.
-- **Agendar reunión:** captura nombre, correo, motivo y disponibilidad preferida.
-- **Hablar con una persona:** deja el estado como `pendiente_humano`.
+- `1`, `asesoría`, `contabilidad`
+- `2`, `tributaria`, `iva`, `f29`, `impuestos`
+- `3`, `crear empresa`, `empresa`
+- `4`, `documentos`, `enviar documentos`
+- `5`, `reunión`, `agendar`
+- `6`, `humano`, `persona`, `asesor`
 
 ## Comandos globales
 
-- `MENU`, `MENÚ` o `INICIO`: limpia el flujo actual y muestra el menú.
-- `CANCELAR`: limpia el flujo actual y cancela el proceso.
-- `HUMANO`: deriva a una persona del equipo.
+Disponibles en cualquier momento:
+
+- `MENU`, `MENÚ`, `INICIO`: limpia el estado actual y muestra el menú principal.
+- `CANCELAR`: limpia el estado actual y responde: `Proceso cancelado. Si necesitas otra cosa, escribe MENÚ.`
+- `HUMANO`: cambia el estado a `pendiente_humano` y deriva a una persona del equipo.
+
+## Flujos disponibles
+
+1. **Asesoría contable:** captura tipo de cliente, nombre, empresa, RUT opcional, correo, giro, servicio principal y contabilidad atrasada.
+2. **Consulta tributaria:** clasifica la consulta y la deja registrada para revisión humana.
+3. **Crear empresa:** captura necesidad, rubro, socios, nombre y correo.
+4. **Enviar documentos:** solicita nombre/empresa, acepta texto, imágenes y documentos, cuenta archivos y finaliza con `LISTO`.
+5. **Agendar reunión:** captura nombre, correo, motivo y disponibilidad preferida.
+6. **Hablar con una persona:** guarda el estado como `pendiente_humano`.
+
+## Google Sheets
+
+`src/services/googleSheets.service.js` contiene `appendLead(data)`.
+
+Por defecto:
+
+```env
+GOOGLE_SHEETS_ENABLED=false
+```
+
+En ese modo, los leads se muestran en consola y no se lanza error. Esto permite probar el bot completo sin configurar Google Sheets.
+
+La estructura preparada para cada lead es:
+
+- fecha
+- hora
+- teléfono
+- nombre
+- empresa
+- rut
+- correo
+- tipo_solicitud
+- detalle
+- estado
+- origen = WhatsApp Bot
 
 ## Seguridad
 
-- El bot no entrega asesorías tributarias complejas como si fuera contador.
-- Las consultas delicadas se registran para revisión humana.
-- El bot no solicita claves del SII, claves tributarias, contraseñas ni datos bancarios.
-- Los flujos sensibles incluyen advertencias para no enviar información confidencial.
+- El bot no pide claves del SII, claves tributarias, contraseñas ni datos bancarios.
+- El bot no responde asesorías tributarias complejas como si fuera contador.
+- Las consultas tributarias se registran para revisión del equipo de MyR Consultores.
+- Los mensajes sensibles recuerdan no enviar claves ni información confidencial.
 
-## Estructura
+## Estructura del proyecto
 
 ```txt
-src/
-├── config/env.js
-├── constants/messages.js
-├── controllers/whatsapp.controller.js
-├── flows/
-├── routes/whatsapp.routes.js
-├── server.js
-├── services/
-│   ├── googleSheets.service.js
-│   └── whatsapp.service.js
-├── store/conversationState.store.js
-└── utils/
+bot-whatsapp-myr/
+├── src/
+│   ├── server.js
+│   ├── config/env.js
+│   ├── routes/whatsapp.routes.js
+│   ├── controllers/whatsapp.controller.js
+│   ├── services/
+│   │   ├── whatsapp.service.js
+│   │   └── googleSheets.service.js
+│   ├── flows/
+│   ├── store/conversationState.store.js
+│   ├── utils/
+│   │   ├── messageParser.js
+│   │   └── validators.js
+│   └── constants/messages.js
+├── .env.example
+├── package.json
+└── README.md
 ```
