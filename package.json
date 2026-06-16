@@ -1,0 +1,27 @@
+{
+  "name": "bot-whatsapp-contable",
+  "version": "1.0.0",
+  "description": "MVP de bot WhatsApp Cloud API por flujos para MyR Consultores.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "cloud-api",
+    "bot",
+    "mvp"
+  ],
+  "author": "MyR Consultores",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
