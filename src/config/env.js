@@ -11,7 +11,6 @@ const env = {
   googleSheetsId: process.env.GOOGLE_SHEETS_ID,
   googleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
   googlePrivateKey: process.env.GOOGLE_PRIVATE_KEY,
-  adminEmail: process.env.ADMIN_EMAIL,
 };
 
 module.exports = env;

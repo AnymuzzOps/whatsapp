@@ -1,7 +1,7 @@
 {
   "name": "bot-whatsapp-contable",
   "version": "1.0.0",
-  "description": "Bot de WhatsApp Cloud API por flujos para MyR Consultores.",
+  "description": "MVP de bot WhatsApp Cloud API por flujos para MyR Consultores.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -11,8 +11,7 @@
     "whatsapp",
     "cloud-api",
     "bot",
-    "contabilidad",
-    "chile"
+    "mvp"
   ],
   "author": "MyR Consultores",
   "license": "MIT",
